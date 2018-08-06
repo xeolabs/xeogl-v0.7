@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>xeogl Example</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <link href="css/styles.css" rel="stylesheet"/>
+
+    <script src="../build/xeogl.js"></script>
+    <script src="js/models/glTFModel.js"></script>
+
+<body>
+
+<div id="info">
+    <h1>mouse over the <a href="../docs/classes/Entity.html" target="_parent">Entities</a> to ray-pick their surfaces
+    </h1>
+
+</div>
+
+<script>
+
+    var gearbox = new xeogl.GLTFModel({
+        src: "models/gltf/GearboxAssy/glTF-MaterialsCommon/GearboxAssy.gltf",
+        flattenTransforms: true,
+        //lambertMaterials: true,
+        combineGeometry: true,
+        quantizeGeometry: true
+    });
+
+    var scene = gearbox.scene;
+
+    // Set initial camera position
+    var camera = scene.camera;
+    camera.eye = [174.46, 16.91, -21.92];
+    camera.look = [159.2, 17.02, 3.21];
+    camera.up = [-0.17, 0.89, 0.4];
+
+    // Allow user camera control
+    new xeogl.CameraControl();
+
+    //--------------------------------------------
+    // Create helper to show ray-Entity hits
+    //--------------------------------------------
+
+
+    var hitHelper = new (function () {
+
+        var entity = new xeogl.Entity({
+            geometry: new xeogl.SphereGeometry({radius: .4}),
+            material: new xeogl.PhongMaterial({emissive: [1, 0, 0], diffuse: [0, 0, 0]}),
+            transform: new xeogl.Translate({
+                xyz: [0, 0, 0]
+            }),
+            pickable: false,
+            visible: true
+        });
+
+        this.show = function (hit) {
+            entity.transform.xyz = hit.worldPos;
+            entity.visible = true;
+        };
+
+        this.hide = function () {
+            entity.visible = false;
+        };
+    })();
+
+    //--------------------------------------------------------------------
+
+    // Attempt to pick a Entity on each mouse move.
+    // Highlight each Entity that we successfully pick.
+
+    var input = scene.input;
+
+    var lastEntity = null;
+    var lastColorize = null;
+
+    var x = -10;
+    input.on("mousemove", function (coords) {
+
+        x += 0.1;
+
+        var hit = scene.pick({
+            canvasPos: coords,
+            pickSurface: true  // <<------ This causes picking to find the intersection point on the entity
+        });
+
+        if (hit) {
+
+            if (!lastEntity || hit.entity.id !== lastEntity.id) {
+
+                if (lastEntity) {
+                    lastEntity.colorize = lastColorize;
+                }
+
+                lastEntity = hit.entity;
+                lastColorize = hit.entity.colorize.slice();
+
+                hit.entity.colorize = [0.0, 1.0, 0.0, 1.0];
+            }
+
+            hitHelper.show(hit);
+
+        } else {
+
+            if (lastEntity) {
+                lastEntity.colorize = lastColorize;
+                lastEntity = null;
+
+                hitHelper.hide();
+            }
+        }
+    });
+
+</script>
+</body>
+</html>
